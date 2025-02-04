@@ -1,4 +1,4 @@
 # GpsRecorder
 
-Projet basé sur un [ESP32-S3-GEEK](https://www.waveshare.com/wiki/ESP32-S3-GEEK)
-![ESP32-S3-GEEK](https://www.waveshare.com/wiki/File:ESP32-S3-GEEK-introduction-02.png)
+Projet basé sur un [ESP32-S3-GEEK](https://www.waveshare.com/wiki/ESP32-S3-GEEK)<br>
+![ESP32-S3-GEEK](https://www.waveshare.com/wiki/File:ESP32-S3-GEEK-introduction-02.png?raw=true)
