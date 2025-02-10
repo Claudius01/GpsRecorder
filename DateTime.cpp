@@ -1,4 +1,4 @@
-// $Id: DateTime.cpp,v 1.3 2025/02/03 10:19:54 administrateur Exp $
+// $Id: DateTime.cpp,v 1.6 2025/02/10 16:35:10 administrateur Exp $
 
 #include <Arduino.h>
 
@@ -30,7 +30,7 @@ static ST_FOR_SOMMER_TIME_CHANGE   g__st_for_sommer_time_change = {
   }
 };
 
-DateTime::DateTime()
+DateTime::DateTime() : epoch_start(0L),epoch(0), epoch_diff(0L)
 {
 	Serial.println("DateTime::DateTime()");
 }
@@ -192,7 +192,10 @@ long DateTime::buildGpsDateTime(const char i__date[], const char i__time[], char
 
 bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
 {
+#if 0   // TBC: Interference avec les traces d'emission de 'GpsPilot.txt'
   char l__buffer[80];
+#endif
+
   ST_DATE_AND_TIME l__dateAndTime;
   bool l__flg_available_sommer = false;
   bool l__flg_available_winter = false;
@@ -209,6 +212,7 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
   // Calculation of day of the week
   l__dateAndTime.day_of_week = (char)((l__epoch / 86400L) % 7L);
 
+#if 0   // TBC: Interference avec les traces d'emission de 'GpsPilot.txt'
   sprintf(l__buffer, "Epoch UNIX GMT [%ld] (%04d/%02d/%02d %02d:%02d:%02d [%s])\n",
     l__epoch,
     2000 + l__dateAndTime.year, l__dateAndTime.month, l__dateAndTime.day,
@@ -216,6 +220,7 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
     g__st_for_sommer_time_change.st_days_in_week[(int)l__dateAndTime.day_of_week].name);
 
   Serial.print(l__buffer);
+#endif
 
   // Parcours jusqu'à trouver le dernier Dimanche du mois
   byte n = 0;
@@ -235,6 +240,7 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
 
         l__flg_available_sommer = true;
 
+#if 0   // TBC: Interference avec les traces d'emission de 'GpsPilot.txt'
         sprintf(l__buffer, "\tDernier %s du mois [%04d/%02d/%02d 01:00:00] (%ld)\n",
           g__st_for_sommer_time_change.st_days_in_week[(int)g__st_for_sommer_time_change.st_date_sommer.day_of_week].name,
           2000 + g__st_for_sommer_time_change.st_date_sommer.year,
@@ -243,6 +249,8 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
           g__st_for_sommer_time_change.st_date_sommer.epoch);
 
         Serial.print(l__buffer);
+#endif
+
         break;
       }
     }
@@ -263,6 +271,7 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
   // Calculation of day of the week
   l__dateAndTime.day_of_week = (char)((l__epoch / 86400L) % 7L);
 
+#if 0   // TBC: Interference avec les traces d'emission de 'GpsPilot.txt'
   sprintf(l__buffer, "Epoch UNIX GMT [%ld] (%04d/%02d/%02d %02d:%02d:%02d [%s])\n",
     l__epoch,
     2000 + l__dateAndTime.year, l__dateAndTime.month, l__dateAndTime.day,
@@ -270,6 +279,7 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
     g__st_for_sommer_time_change.st_days_in_week[(int)l__dateAndTime.day_of_week].name);
 
   Serial.print(l__buffer);
+#endif
 
   // Parcours jusqu'à trouver le dernier Dimanche du mois
   n = 0;
@@ -289,6 +299,7 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
 
         l__flg_available_winter = true;
 
+#if 0   // TBC: Interference avec les traces d'emission de 'GpsPilot.txt'
         sprintf(l__buffer, "\tDernier %s du mois [%04d/%02d/%02d 01:00:00] (%ld)\n",
           g__st_for_sommer_time_change.st_days_in_week[(int)g__st_for_sommer_time_change.st_date_winter.day_of_week].name,
           2000 + g__st_for_sommer_time_change.st_date_winter.year,
@@ -297,6 +308,8 @@ bool DateTime::setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime)
           g__st_for_sommer_time_change.st_date_winter.epoch);
 
         Serial.print(l__buffer);
+#endif
+
         break;
       }
     }
@@ -431,3 +444,18 @@ void DateTime::applySommerWinterHour(ST_DATE_AND_TIME *io__dateAndTime_presentat
   }
 }
 
+void DateTime::formatEpochDiff(char *o__buffer) const
+{
+  if (epoch_diff < 3600L) {
+    // Formatage comme "MM'SS" si 'epoch_diff' < 1 Heure
+    sprintf(o__buffer, "%2lu'%02lu", (epoch_diff / 60L), (epoch_diff % 60L));
+  }
+  else if (epoch_diff < (100L * 3600L)) {
+    // Formatage comme "HH:MM" si 'epoch_diff' < 100 Heures
+    sprintf(o__buffer, "%02lu:%02lu", (epoch_diff / 3600L), (epoch_diff % 3600L) / 60L);
+  }
+  else {
+    // Formatage comme ">100H" si 'epoch_diff' >= 100 Heures
+    sprintf(o__buffer, ">100H");
+  }
+}

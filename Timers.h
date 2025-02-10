@@ -1,4 +1,4 @@
-// $Id: Timers.h,v 1.4 2025/01/29 13:59:02 administrateur Exp $
+// $Id: Timers.h,v 1.7 2025/02/08 18:10:57 administrateur Exp $
 
 #ifndef __TIMERS__
 #define __TIMERS__
@@ -17,6 +17,9 @@ constexpr long DURATION_TIMER_SDCARD_INIT_ERROR = 100L;         // 1"
 constexpr long DURATION_TIMER_NMEA_ACTIVITY = 100L;             // 1"
 constexpr long DURATION_TIMER_NMEA_ERROR = 100L;                // 1"
 
+constexpr long DURATION_TIMER_SEND_GPSPILOT = 25L;              // 250mS
+constexpr long DURATION_TIMER_ACTIVATE_SDCARD = 100L;           // 1"
+
 typedef enum {
   TIMER_CHENILLARD = 0,         // Presentation sur la Led
   TIMER_CONNECT,                // Gestion etats "connecte/non connecte"
@@ -28,6 +31,9 @@ typedef enum {
 
   TIMER_NMEA_ACTIVITY,          // Timer pour la presentation de l'emission TLV
   TIMER_NMEA_ERROR,             // Timer pour la presentation des erreurs de reception NMEA
+
+  TIMER_SEND_GPSPILOT,          // Timer pour le cadencement ligne a ligne de 'GpsPilot.txt'
+  TIMER_ACTIVATE_SDCARD,        // Timer pour l'activation de la SDCard apres l'emission de 'GpsPilot.txt'
 
   NBR_OF_TIMERS                 // Numbers of timers defined
 } DEF_TIMERS;

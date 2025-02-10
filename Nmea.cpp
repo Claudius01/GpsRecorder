@@ -1,4 +1,4 @@
-// $Id: Nmea.cpp,v 1.13 2025/02/04 15:03:36 administrateur Exp $
+// $Id: Nmea.cpp,v 1.19 2025/02/10 16:35:10 administrateur Exp $
 
 /* Gestion des trames NMEA a 4800 bauds
 
@@ -18,6 +18,7 @@
 #include "GestionLCD.h"
 #include "Nmea.h"
 #include "SDCard.h"
+#include "GpsPilot.h"
 
 #define USE_TRACE_NMEA            0
 #define USE_TRACE_NMEA_CONTENT    0
@@ -32,6 +33,11 @@ void callback_exec_deconnexion()
   g__nmea->setConnected(false);
 
   g__gestion_lcd->Paint_DrawString_EN(6, 8, g__nmea->getDateTimeLcd(), &Font16, BLACK, YELLOW);
+
+  char l__buffer[32];
+  memset(l__buffer, '\0', sizeof(l__buffer));
+  g__date_time->formatEpochDiff(l__buffer);
+  g__gestion_lcd->Paint_DrawString_EN(6, 56, l__buffer, &Font16, BLACK, YELLOW);
 }
 
 void callback_nmea_end_activity()
@@ -358,6 +364,8 @@ void Nmea::extractInfosGPRMC(char *i__frame)
       // TODO: Presentation de la date et heure pour une ecriture dans la SDCard 
     }
 
+#if 0   // TBC: Interference avec les traces d'emission de 'GpsPilot.txt'
+
   /* Nouvelles traces si l'heure courante est inferieure à celle sauvegardee ou 
    * si la date courante est differente de celle sauvegardee
    * => But: Permet de discriminer les nouvelles traces anterieures aux precedentes
@@ -375,6 +383,7 @@ void Nmea::extractInfosGPRMC(char *i__frame)
     ) {
 			Serial.printf("# New traces\n");
     }
+#endif
 
     // Sauvegardes meme si erreur pour le test avec la trame suivante
     m__infos_gps.dateAndTime = l__dateAndTime;
@@ -420,7 +429,9 @@ void Nmea::gestionResponse()
         // Build buffer for "enregistreur de traces" in TLV format
         buildStrForExternal(m__buffer_tlv);
 
-        Serial.printf("#%u: TLV [%s] (%s)\n", m__idx_tlv++, m__buffer_tlv, (m__infos_gps.flg_inh_send_tlv == true ? "No Send" : "Send"));
+        if (g__gps_pilot->isInProgress() == false) {
+          Serial.printf("#%u: TLV [%s] (%s)\n", m__idx_tlv++, m__buffer_tlv, (m__infos_gps.flg_inh_send_tlv == true ? "No Send" : "Send"));
+        }
 
         /* Recopie dans le buffer d'emission qui est lu caractere par caractere
            au rithme de 2.5 mS
@@ -445,6 +456,32 @@ void Nmea::gestionResponse()
       
         //Serial.printf("[%s] (epoch [%lu])\n", m__infos_gps.st_dateAndTimeUNIX_GMT.t_date_time, m__infos_gps.st_dateAndTime.epoch);
         //Serial.printf("LCD [%s]\n", m__infos_gps.st_dateAndTimeUNIX_GMT.t_date_time_lcd);
+
+        // Duree de fonctionnement depuis la 1st trame NMEA valide
+        if (g__date_time->getEpochStart() == 0L) {
+          g__date_time->setEpochStart(m__infos_gps.st_dateAndTime.epoch);
+
+          //Serial.printf("-> Start Epoch [%lu]\n", g__date_time->getEpochStart());
+        }
+
+        g__date_time->setEpoch(m__infos_gps.st_dateAndTime.epoch);
+
+#if 0
+        Serial.printf("-> Epoch [%lu] -> [%lu] (+%lu) (%0lu'%02lu)\n",
+          g__date_time->getEpochStart(), g__date_time->getEpoch(),
+          g__date_time->getEpochDiff(), (g__date_time->getEpochDiff() / 60L), ((g__date_time->getEpochDiff() % 60L)));
+#endif
+        char l__buffer[32];
+        memset(l__buffer, '\0', sizeof(l__buffer));
+        g__date_time->formatEpochDiff(l__buffer);
+
+        /* Maj partielle des infos           1         2
+                                   012345678901234567890
+                                  "HH'MM #nnnnn ddd.u Kb"
+                                  "HH'MM #nnnnn d.uuu Mb"
+        */
+        g__gestion_lcd->Paint_DrawString_EN(6, 56, l__buffer, &Font16, BLACK, WHITE);
+        // Fin: Duree de fonctionnement depuis la 1st trame NMEA valide
 
         g__gestion_lcd->Paint_DrawString_EN(6, 8, getDateTimeLcd(), &Font16, BLACK, WHITE);
       }
@@ -529,7 +566,9 @@ void Nmea::buildStrForExternal(char *o__text_buffer)
 void Nmea::setConnected(bool i__value)
 {
   if (i__value != m__connected) {
+#if 0   // TBC: Interference avec les traces d'emission de 'GpsPilot.txt'
     Serial.printf("### %s\n", (i__value == true) ? "Connexion" : "Deconnexion");
+#endif
 
     // Ecriture sur la SDCard
     g__sdcard->appendGpsFrame((i__value == true) ? "#Connexion\n" : "#Deconnexion\n");
@@ -569,8 +608,20 @@ bool Nmea::sendTlv()
           memset(l__buffer, '\0', sizeof(l__buffer));
           g__sdcard->formatSize(g__sdcard->getGpsFrameSize(), l__buffer);
 
+          char l__buffer2[32];
+          memset(l__buffer2, '\0', sizeof(l__buffer2));
+          g__sdcard->formatNbrRecords(l__buffer2);
+
+          Serial.printf("-> Nbr Records [%u] [%s]\n", g__sdcard->getNbrRecords(), l__buffer2);
           Serial.printf("-> Size [%u] bytes [%s]\n", g__sdcard->getGpsFrameSize(), l__buffer);
-          g__gestion_lcd->Paint_DrawString_EN(6, 40, l__buffer, &Font16, BLACK, WHITE);
+
+          /* Maj partielle des infos            1         2
+                                      012345678901234567890
+                                     "HH'MM #nnnnn ddd.u Kb"
+                                     "HH'MM #nnnnn d.uuu Mb"
+          */
+          g__gestion_lcd->Paint_DrawString_EN(6 + ( 6 * 11), 56, l__buffer2, &Font16, BLACK, WHITE);
+          g__gestion_lcd->Paint_DrawString_EN(6 + (13 * 11), 56, l__buffer, &Font16, BLACK, WHITE);
         }
       }
 
@@ -594,3 +645,8 @@ void Nmea::setError()
   g__timers->start(TIMER_NMEA_ERROR, DURATION_TIMER_NMEA_ERROR, &callback_nmea_end_error);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_RED_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, RED);
 }
+
+void Nmea::sendChar(char i__value) const
+{
+  g__serial_nmea.write(i__value);
+};

@@ -1,4 +1,4 @@
-// $Id: GestionLCD.h,v 1.7 2025/02/04 09:49:31 administrateur Exp $
+// $Id: GestionLCD.h,v 1.8 2025/02/09 17:48:01 administrateur Exp $
 
 #ifndef __GESTION_LCD__
 #define __GESTION_LCD__
@@ -25,9 +25,10 @@
 
 // Positions des feux @ SDCard
 #define LIGHTS_POSITION_SDC               (LIGHTS_POSITION_X + 100)
-#define LIGHTS_POSITION_SDC_YELLOW_X      LIGHTS_POSITION_SDC
-#define LIGHTS_POSITION_SDC_RED_X         (LIGHTS_POSITION_SDC + 25)
-#define LIGHTS_POSITION_SDC_BLUE_X        (LIGHTS_POSITION_SDC + 50)
+#define LIGHTS_POSITION_SDC_GREEN_X       LIGHTS_POSITION_SDC
+#define LIGHTS_POSITION_SDC_YELLOW_X      (LIGHTS_POSITION_SDC + 25)
+#define LIGHTS_POSITION_SDC_RED_X         (LIGHTS_POSITION_SDC + 50)
+#define LIGHTS_POSITION_SDC_BLUE_X        (LIGHTS_POSITION_SDC + 75)
 
 #define LIGHTS_POSITION_Y       108
 

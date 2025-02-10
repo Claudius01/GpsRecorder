@@ -1,4 +1,4 @@
-// $Id: SDCard.h,v 1.4 2025/02/04 15:03:36 administrateur Exp $
+// $Id: SDCard.h,v 1.7 2025/02/10 15:28:25 administrateur Exp $
 
 #ifndef __SDCARD__
 #define __SDCARD__
@@ -43,7 +43,8 @@ class SDCard {
     bool        flg_sdcard_in_use;
     bool        flg_inh_append_gps_frame;
 
-    size_t      m__gps_frame_size;
+    size_t      gps_frame_size;
+    uint16_t    gps_frame_nbr_records;
 
     bool preparing();
 
@@ -68,8 +69,13 @@ class SDCard {
     bool getInhAppendGpsFrame() const { return flg_inh_append_gps_frame; };
 
     bool appendGpsFrame(const char *i__frame, boolean i__flg_force_append = false);
-    size_t getGpsFrameSize() const { return m__gps_frame_size; };
-    void formatSize(size_t i__value, char *o__buffer);
+    size_t getGpsFrameSize() const { return gps_frame_size; };
+
+    void formatSize(size_t i__value, char *o__buffer) const ;
+    void formatNbrRecords(char *o__buffer) const { sprintf(o__buffer, "#%u", gps_frame_nbr_records); };
+  
+    size_t sizeFile(const char *i__file_name);
+    uint16_t getNbrRecords() const { return gps_frame_nbr_records; };
 
     // Methods for tests
     bool printInfos();   
@@ -77,6 +83,7 @@ class SDCard {
     bool exists(const char *i__path);
     bool readFile(const char *i__file);
     bool getFileLine(const char *i__file, String &o__line, bool i__flg_close = false);
+    size_t readFileLine(const char *i__file, String &o__line, bool i__flg_close = false);
     bool appendFile(const char *i__file, const char *i__line);
     bool renameFile(const char *i__path_from, const char *i__path_to);
     bool deleteFile(const char *i__path);
@@ -90,4 +97,6 @@ extern void callback_sdcard_init_error();
 
 extern SDCard     *g__sdcard;
 extern bool       g__flg_inh_sdcard_ope;
+
+extern void       callback_activate_sdcard();
 #endif

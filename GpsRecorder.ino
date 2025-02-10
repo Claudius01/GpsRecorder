@@ -1,4 +1,4 @@
-// $Id: GpsRecorder.ino,v 1.17 2025/02/04 15:03:36 administrateur Exp $
+// $Id: GpsRecorder.ino,v 1.26 2025/02/10 16:35:10 administrateur Exp $
 
 /* Projet: GpsRecorder
 
@@ -11,6 +11,7 @@
 
    2025/02/04
       - Improve presentation...
+      - Add 'GpsPilot' class...
  */
 
 #include "Misc.h"
@@ -20,17 +21,15 @@
 #include "Nmea.h"
 #include "SDCard.h"
 #include "OneButton.h"
+#include "GpsPilot.h"
 
-/*                            1   .     2       . 3         4 .       5     .
-                     12345678901234567890123456789012345678901234567890123456
-*/
-#define PROMPT      "..GpsRecorder...2025/02/04....V1.0"    // 3 lignes de 14 caracteres
+#define PROMPT      "GpsRecorder 2025/02/10 V1.0"
 
 #define USE_INCOMING_CMD    1
 
 // Pins de l'ESP32-S3-GEEK
-#define PIN_LED         6       // GPIO6
-#define PIN_INPUT       0       // GPIO0 (Bouton)
+#define PIN_LED         6       // GPIO6 (connecteur GPIO)
+#define PIN_INPUT       0       // GPIO0 (Bouton sur la cle)
 
 // Definitions pour le Timer Hard
 #define TIMER_FREQUENCY       1000000    // 1 MHz
@@ -58,6 +57,7 @@ SDCard        *g__sdcard = NULL;
 OneButton     *g__button = NULL;
 GestionLCD    *g__gestion_lcd = NULL;
 DateTime      *g__date_time = NULL;
+GpsPilot      *g__gps_pilot = NULL;
 
 #if USE_INCOMING_CMD
 size_t        g__count = 0;
@@ -177,11 +177,21 @@ void callback_click(void *oneButton)
   memset(l__buffer, '\0', sizeof(l__buffer));
   g__sdcard->formatSize(g__sdcard->getGpsFrameSize(), l__buffer);
 
+  char l__buffer2[32];
+  memset(l__buffer2, '\0', sizeof(l__buffer2));
+  g__sdcard->formatNbrRecords(l__buffer2);
+
   // Ecriture sur la SDCard du resultat avant l'action
   if (g__sdcard->getInhAppendGpsFrame() == false) {
     g__sdcard->appendGpsFrame("#Stop recording\n");
 
-    g__gestion_lcd->Paint_DrawString_EN(6, 40, l__buffer, &Font16, BLACK, YELLOW);
+    /* Maj partielle des infos            1         2
+                                012345678901234567890
+                               "HH'MM #nnnn ddd.u Kb"
+                               "HH'MM #nnnn d.uuu Mb"
+    */
+    g__gestion_lcd->Paint_DrawString_EN(6 + ( 6 * 11), 56, l__buffer2, &Font16, BLACK, YELLOW);
+    g__gestion_lcd->Paint_DrawString_EN(6 + (13 * 11), 56, l__buffer, &Font16, BLACK, YELLOW);
   }
 
   // Bascule "Autorisation/Inhibition" concatenation infos dans la SDCard
@@ -191,7 +201,8 @@ void callback_click(void *oneButton)
   if (g__sdcard->getInhAppendGpsFrame() == false) {
     g__sdcard->appendGpsFrame("#Start recording\n");
 
-    g__gestion_lcd->Paint_DrawString_EN(6, 40, l__buffer, &Font16, BLACK, WHITE);
+    g__gestion_lcd->Paint_DrawString_EN(6 + ( 6 * 11), 56, l__buffer2, &Font16, BLACK, WHITE);
+    g__gestion_lcd->Paint_DrawString_EN(6 + (13 * 11), 56, l__buffer, &Font16, BLACK, WHITE);
   }
 }
 
@@ -233,20 +244,19 @@ void callback_sdcard_init_error()
  * - Extinction de la Led Red après 500 mS
  * - Extinction de la Led Yellow après 1 Sec.
  * - Extinction de la Led Green après 1.5 Sec
-*/
-void testLeds()
-{
-  digitalWrite(LED_RED, LOW);
-  digitalWrite(LED_YELLOW, LOW);
-  digitalWrite(LED_GREEN, LOW);
 
+   => Replication pour le LCD ;-)
+*/
+void testSymbology()
+{
   g__gestion_lcd->Paint_DrawString_EN(28, 90, "GPS", &Font16, BLACK, WHITE);
-  g__gestion_lcd->Paint_DrawString_EN(108, 90, "SDCard", &Font16, BLACK, WHITE);
+  g__gestion_lcd->Paint_DrawString_EN(120, 90, "SDCard", &Font16, BLACK, WHITE);
 
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_GREEN_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, GREEN);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_YELLOW_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, YELLOW);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_RED_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, RED);
 
+  g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_GREEN_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, GREEN);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_YELLOW_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, YELLOW);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_RED_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, RED);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_BLUE_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, BLUE);
@@ -256,12 +266,13 @@ void testLeds()
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_BLUE_X, LIGHTS_POSITION_Y, LIGHT_BORD_IDX, &Font24Symbols, BLACK, BLUE);
   delay(500);
 
-  digitalWrite(LED_RED, HIGH);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_RED_X, LIGHTS_POSITION_Y, LIGHT_BORD_IDX, &Font24Symbols, BLACK, RED);
   delay(500);
 
-  digitalWrite(LED_YELLOW, HIGH);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_YELLOW_X, LIGHTS_POSITION_Y, LIGHT_BORD_IDX, &Font24Symbols, BLACK, YELLOW);
+  delay(500);
+
+  g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_GREEN_X, LIGHTS_POSITION_Y, LIGHT_BORD_IDX, &Font24Symbols, BLACK, GREEN);
   delay(500);
 
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_RED_X, LIGHTS_POSITION_Y, LIGHT_BORD_IDX, &Font24Symbols, BLACK, RED);
@@ -270,7 +281,6 @@ void testLeds()
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_YELLOW_X, LIGHTS_POSITION_Y, LIGHT_BORD_IDX, &Font24Symbols, BLACK, YELLOW);
   delay(500);
 
-  digitalWrite(LED_GREEN, HIGH);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_GREEN_X, LIGHTS_POSITION_Y, LIGHT_BORD_IDX, &Font24Symbols, BLACK, GREEN);
   delay(500);
 }
@@ -311,8 +321,8 @@ void setup()
   // Initialisation du LCD
   initLcd();
 
-  // Test Leds 
-  testLeds();
+  // Test de la symbologie (Led et LCD)
+  testSymbology();
 
   g__timers = new Timers();
   g__timers->start(TIMER_CHENILLARD, DURATION_TIMER_CHENILLARD, &callback_exec_chenillard);
@@ -328,7 +338,11 @@ void setup()
   g__button->attachDoubleClick(callback_double_click, g__button);
   g__button->setLongPressIntervalMs(1000);
 
-  //g__gestion_lcd->Paint_DrawString_EN(1, 8, PROMPT, &Font24, BLACK, WHITE);
+  g__gps_pilot = new GpsPilot();
+
+  // Emission du fichier 'GpsPilot.txt'
+  g__sdcard->init();
+  g__gps_pilot->send();
 
 #if USE_INCOMING_CMD
   memset(g__incoming_buff, '\0', sizeof(g__incoming_buff));
@@ -350,14 +364,17 @@ void loop()
     static bool g__flg_progress = false;
 
     if (g__flg_progress == false) {
+      // Emission exclusive des trames TLV et du fichier 'GpsPilot.txt'
       if (g__nmea->getInhSendTlv() == false) {
         g__nmea->sendTlv();
+      }
+      else if (g__gps_pilot->isBufferToSend() == true) {
+        g__gps_pilot->sendBuffer();
       }
 
       g__flg_progress = true;
     }
     else {
-      // Provision pour le 2nd UART
       g__flg_progress = false;
     }
 
@@ -405,9 +422,10 @@ void loop()
 void usage_cmd()
 {
 	Serial.printf("Command:\n");
-	Serial.printf("- PAINT\n");
-	Serial.printf("- NMEA\n");
+	Serial.printf("- Paint\n");
+	Serial.printf("- Nmea\n");
 	Serial.printf("- SDCard\n");
+	Serial.printf("- GpsPilot\n");
 }
 
 void usage_paint()
@@ -434,11 +452,18 @@ void usage_sdcard()
 	Serial.printf("- listdir <dir>                     Liste d'un repertoire donne (ie. /, /PILOT, etc.)\n");
 	Serial.printf("- exists <path>                     Existence d'un repertoire ou d'un fichier\n");
 	Serial.printf("- readFile <file>                   Lecture et impression d'un fichier donne (ie. /PILOT/GpsPilot.txt)\n");
-	Serial.printf("- getFileLine <file> <nbr_lines>    Lectures successives d'une ligne d'un fichier\n");
+	Serial.printf("- readFileLine <file>               Lectures successives d'une ligne d'un fichier jusqu'a la fin\n");
+	Serial.printf("- getFileLine <file> <nbr_lines>    Lectures successives de 'nbr_lines' lignes d'un fichier\n");
 	Serial.printf("- appendFile <file> <patterns>      Concatenation dans <file> avec des patterns constituant une ligne (ie. /LOG/log.txt ajout d'une ligne)\n");
 	Serial.printf("- renameFile <path_from> <path_to>  Renommage d'un repertoire ou d'un fichier\n");
 	Serial.printf("- deleteFile <file>                 Suppression d'un fichier\n");
 	Serial.printf("- getFileLines [<file>]             Ouverture, lecture et analyse des enregistrements de <file> si non NULL; sinon 'NAME_OF_FILE_GPS_PILOT'\n");
+}
+
+void usage_gpspilot()
+{
+	Serial.printf("Usage:\n");
+	Serial.printf("- send                              Autorisation/Inhibition emission TLV\n");
 }
 
 void gestionOfCommands()
@@ -462,10 +487,10 @@ void gestionOfCommands()
       Serial.print(g__incoming_buff);
       Serial.printf("] (length: %d)\n", strlen(g__incoming_buff));
 
-      if (!strncmp(g__incoming_buff, "PAINT", strlen("PAINT"))) {
+      if (!strncmp(g__incoming_buff, "Paint", strlen("Paint"))) {
       	strcpy(l__copy_incomming_buff, g__incoming_buff);
 
-         char *l__pattern = strtok(l__copy_incomming_buff, " ");    // Skip "PAINT" command
+         char *l__pattern = strtok(l__copy_incomming_buff, " ");    // Skip command
          l__pattern = strtok(NULL, " ");                   // Get the sub-command
          if (l__pattern != NULL) {
          	if (!strcmp(l__pattern, "cache")) {            // 'cache' sub-command
@@ -492,18 +517,18 @@ void gestionOfCommands()
 			    usage_paint();
         }
       }
-      else if (!strncmp(g__incoming_buff, "NMEA", strlen("NMEA"))) {
+      else if (!strncmp(g__incoming_buff, "Nmea", strlen("Nmea"))) {
       	strcpy(l__copy_incomming_buff, g__incoming_buff);
 
-         char *l__pattern = strtok(l__copy_incomming_buff, " ");    // Skip "NMEA" command
+         char *l__pattern = strtok(l__copy_incomming_buff, " ");    // Skip command
          l__pattern = strtok(NULL, " ");                   // Get the sub-command
          if (l__pattern != NULL) {
          	if (!strcmp(l__pattern, "error")) {            // 'error' sub-command
             	g__nmea->setError();
             }
          	else if (!strcmp(l__pattern, "tlv")) {         // 'tlv' sub-command
-               l__pattern = strtok(NULL, " ");             // Get on/off
-					bool l__flg =  g__nmea->getInhSendTlv();
+            l__pattern = strtok(NULL, " ");           // Get enabl/disable
+				  	bool l__flg =  g__nmea->getInhSendTlv();
                if (l__pattern != NULL) {
 						if (!strcmp(l__pattern, "enable")) l__flg = false;
 						else if (!strcmp(l__pattern, "disable")) l__flg = true;
@@ -523,7 +548,7 @@ void gestionOfCommands()
       else if (!strncmp(g__incoming_buff, "SDCard", strlen("SDCard"))) {
       	strcpy(l__copy_incomming_buff, g__incoming_buff);
 
-         char *l__pattern = strtok(l__copy_incomming_buff, " ");    // Skip "SDCard" command
+         char *l__pattern = strtok(l__copy_incomming_buff, " ");    // Skip command
          l__pattern = strtok(NULL, " ");                   // Get the sub-command
          if (l__pattern != NULL) {
          	if (!strcmp(l__pattern, "init")) {              // 'init' sub-command
@@ -615,6 +640,9 @@ void gestionOfCommands()
                       }
                     }
 #endif
+                    if (l__flg_rtn == false) {
+                      break;
+                    }
                   }
                 }
                 else {
@@ -623,6 +651,64 @@ void gestionOfCommands()
               }
               else {
                 Serial.printf("\t=> getFileLine(): Missing file name\n");
+              }
+            }
+            else if (!strcmp(l__pattern, "readFileLine")) {  // 'readFileLine' sub-command
+              l__pattern = strtok(NULL, " ");                // Get the file name
+              if (l__pattern != NULL) {
+                const char *l__file = l__pattern;
+
+                // Determination de la taille du fichier
+                size_t l__size_file = g__sdcard->sizeFile(l__file);
+
+                if (l__size_file != -1) {
+                  size_t l__size_read = 0;
+
+                  for (int n = 0; n < 1000; n++) {   // Protection a 1000 lectures
+                    bool l__flg_rtn = false;
+                    String l__line = "";
+
+                    /* Passage du nom du fichier sur la 1st lecture
+                       => 'l__line' est depossede du '\n' terminal
+                    */
+                    size_t l__size = g__sdcard->readFileLine((n == 0 ? l__file : NULL), l__line);
+
+                    if (l__size != -1) {
+                      l__size_read += (l__size + 1);    // +1 for '\n'
+                      l__flg_rtn = true;
+                    }
+
+                    Serial.printf("\t=> #%d: readFileLine(%s): [%s] [%s] (%u bytes) (%u bytes read)\n",
+                      n, l__file, (l__flg_rtn == true) ? "Ok" : "Ko", l__line.c_str(), l__size, l__size_read);
+
+                    if (l__flg_rtn == false) {
+                      Serial.printf("\t=> readFileLine(%s): Error read\n", l__file);
+                      break;
+                    }
+
+                    // Cloture et arret si totalite du fichier lu
+                    if (l__size_read == l__size_file) {
+                      g__sdcard->readFileLine(NULL, l__line, true);
+
+                      Serial.printf("\t=> readFileLine(%s): End of read (Ok)\n", l__file);
+                      break;
+                    }
+
+                    // Cloture et arret si depassement du fichier lu
+                    if (l__size_read > l__size_file) {
+                      g__sdcard->readFileLine(NULL, l__line, true);
+
+                      Serial.printf("\t=> readFileLine(%s): End of read (Ko)\n", l__file);
+                      break;
+                    }
+                  }
+                }
+                else {
+                  Serial.printf("\t=> readFileLine(%s): Error read size\n", l__file);
+                }
+              }
+              else {
+                Serial.printf("\t=> readFileLine(): Missing file name\n");
               }
             }
             else if (!strcmp(l__pattern, "appendFile")) {     // 'appendFile' sub-command
@@ -711,9 +797,31 @@ void gestionOfCommands()
           }
         }
         // Fin: Test de la SDCard
+      else if (!strncmp(g__incoming_buff, "GpsPilot", strlen("GpsPilot"))) {
+      	strcpy(l__copy_incomming_buff, g__incoming_buff);
+
+         char *l__pattern = strtok(l__copy_incomming_buff, " ");    // Skip command
+         l__pattern = strtok(NULL, " ");                   // Get the sub-command
+         if (l__pattern != NULL) {
+         	if (!strcmp(l__pattern, "send")) {            // 'send' sub-command
+            g__gps_pilot->send();
+
+            /* TODO: Allumage fugitif de 'SDC_RED' a la fin de l'emission
+                     au moment de l'activation de la SDCard ?!..
+                     => Ok si 'g__gps_pilot->send()' est appelee a la fin dur 'setup()' ;-)
+            */  
+          }
+          else {
+            	Serial.printf("Unknown sub-command [%s]\n", l__pattern);
+          	}
+        }
+        else {
+			    usage_gpspilot();
+        }
+      }
         else {
           Serial.printf("Unknown command [%s]\n", g__incoming_buff);
-				usage_cmd();
+				  usage_cmd();
         }
 
       g__flg_wait_command = true;

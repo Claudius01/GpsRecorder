@@ -1,4 +1,4 @@
-// $Id: Nmea.h,v 1.6 2025/02/04 12:55:08 administrateur Exp $
+// $Id: Nmea.h,v 1.9 2025/02/10 15:28:25 administrateur Exp $
 
 #ifndef __NMEA__
 #define __NMEA__
@@ -7,8 +7,8 @@
 #define max(a, b)    (a > b) ? a : b
 
 // Pins de l'ESP32-S3-GEEK
-#define NMEA_TXD                13      // GPIO13
-#define NMEA_RXD                14      // GPIO14
+#define NMEA_TXD                13      // GPIO13 (connecteur GPIO)
+#define NMEA_RXD                14      // GPIO14 (connecteur GPIO)
 
 #define NUMBER_OF_CHAR_REC      128
 #define NUMBER_OF_CHAR_TLV      128
@@ -98,7 +98,10 @@ class Nmea {
     void              setActivity();
     void              setError();
 
+    time_t            getTimeEpoch() const { return m__infos_gps.st_dateAndTime.epoch; };
     const char        *getDateTimeLcd() const { return m__infos_gps.st_dateAndTimeUNIX_GMT.t_date_time_lcd; };
+
+    void              sendChar(char i__value) const;
 };
 
 extern uint16_t     g__chenillard;

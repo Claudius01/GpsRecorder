@@ -1,4 +1,4 @@
-// $Id: DateTime.h,v 1.2 2025/02/01 17:29:21 administrateur Exp $
+// $Id: DateTime.h,v 1.5 2025/02/10 16:35:10 administrateur Exp $
 
 #ifndef __DATE_TIME__
 #define __DATE_TIME__
@@ -76,8 +76,12 @@ typedef struct {
 
 class DateTime {
 	private:
-    long my_mktime(ST_TM *timeptr);
-    long calculatedEpochTime(ST_DATE_AND_TIME *i__st_date_and_time);
+    long epoch_start;
+    long epoch;
+    long epoch_diff;
+
+		long my_mktime(ST_TM *timeptr);
+		long calculatedEpochTime(ST_DATE_AND_TIME *i__st_date_and_time);
 		bool setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime);
 		void calcSommerTimeChange(ST_DATE_AND_TIME *io__dateAndTime);
 		ENUM_SOMMER_WINTER getSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime);
@@ -88,6 +92,14 @@ class DateTime {
  		~DateTime();
 
 		long buildGpsDateTime(const char i__date[], const char i__time[], char *o_date_time, ST_DATE_AND_TIME *o__dateAndTime, char *o__text_for_lcd = NULL);
+
+    long getEpochStart() const { return epoch_start; };
+    void setEpochStart(long i__value) { epoch_start = i__value; };
+    long getEpoch() const { return epoch; };
+    void setEpoch(long i__value) { epoch = i__value; epoch_diff = (epoch - epoch_start); };
+    long getEpochDiff() const { return epoch_diff; };
+
+    void formatEpochDiff(char *o__buffer) const;
 };
 
 extern DateTime   *g__date_time;

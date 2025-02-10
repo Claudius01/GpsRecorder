@@ -1,4 +1,4 @@
-// $Id: Misc.h,v 1.1 2025/01/28 20:21:57 administrateur Exp $
+// $Id: Misc.h,v 1.2 2025/02/09 20:40:06 administrateur Exp $
 
 #ifndef __MISC__
 #define __MISC__
@@ -21,5 +21,7 @@
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
 extern byte                     g__state_leds;
+
+extern uint32_t cksum_inc(const uint8_t *i__datas, size_t i__size, uint32_t i__crc_tmp, size_t i__size_cumul);
 
 #endif
