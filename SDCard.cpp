@@ -1,4 +1,4 @@
-// $Id: SDCard.cpp,v 1.12 2025/02/10 15:28:25 administrateur Exp $
+// $Id: SDCard.cpp,v 1.13 2025/02/11 13:52:38 administrateur Exp $
 
 #include <Arduino.h>
 
@@ -575,7 +575,7 @@ void SDCard::formatSize(size_t i__value, char *o__buffer) const
   if (i__value < SIZE_10_MEGA_BYTE) {
     if (i__value < SIZE_1_KILO_BYTE) sprintf(o__buffer, "%3u b", i__value);
     else if (i__value < SIZE_1_MEGA_BYTE) sprintf(o__buffer, "%3u.%u Kb", (i__value / SIZE_1_KILO_BYTE), (i__value % SIZE_1_KILO_BYTE) / 100);
-    else sprintf(o__buffer, "%2u.%03u Mb", (i__value / SIZE_1_MEGA_BYTE), (i__value % SIZE_1_MEGA_BYTE) / 1000);
+    else sprintf(o__buffer, "%u.%03u Mb", (i__value / SIZE_1_MEGA_BYTE), (i__value % SIZE_1_MEGA_BYTE) / 1000);
   }
   else {
     sprintf(o__buffer, ">= 10 Mb");

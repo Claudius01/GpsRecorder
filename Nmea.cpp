@@ -1,4 +1,4 @@
-// $Id: Nmea.cpp,v 1.19 2025/02/10 16:35:10 administrateur Exp $
+// $Id: Nmea.cpp,v 1.21 2025/02/12 13:37:18 administrateur Exp $
 
 /* Gestion des trames NMEA a 4800 bauds
 
@@ -75,6 +75,8 @@ Nmea::Nmea()
   m__connected = false;
 
   m__infos_gps.flg_inh_send_tlv = true;
+
+  memset(&m__stats, '\0', sizeof(m__stats));
 }
 
 Nmea::~Nmea()
@@ -493,6 +495,8 @@ void Nmea::gestionResponse()
 
       g__timers->stop(TIMER_CONNECT);
       g__timers->start(TIMER_CONNECT, DURATION_TIMER_CONNECT, &callback_exec_deconnexion);
+
+      m__stats.nbr_frames_ok++;
     }
 }
 
@@ -620,7 +624,6 @@ bool Nmea::sendTlv()
                                      "HH'MM #nnnnn ddd.u Kb"
                                      "HH'MM #nnnnn d.uuu Mb"
           */
-          g__gestion_lcd->Paint_DrawString_EN(6 + ( 6 * 11), 56, l__buffer2, &Font16, BLACK, WHITE);
           g__gestion_lcd->Paint_DrawString_EN(6 + (13 * 11), 56, l__buffer, &Font16, BLACK, WHITE);
         }
       }
@@ -644,9 +647,18 @@ void Nmea::setError()
   g__timers->stop(TIMER_NMEA_ERROR);
   g__timers->start(TIMER_NMEA_ERROR, DURATION_TIMER_NMEA_ERROR, &callback_nmea_end_error);
   g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_GPS_RED_X, LIGHTS_POSITION_Y, LIGHT_FULL_IDX, &Font24Symbols, BLACK, RED);
+
+  m__stats.nbr_frames_ko++;
 }
 
 void Nmea::sendChar(char i__value) const
 {
   g__serial_nmea.write(i__value);
 };
+
+void Nmea::formatNbrFrames(char *o__buffer, unsigned long i__value) const
+{
+  sprintf(o__buffer, "#%lu", i__value);
+  strcat(o__buffer, "    ");           // Padding for "#n    "
+  *(o__buffer + strlen("#12345")) = '\0';
+}

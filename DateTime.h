@@ -1,4 +1,4 @@
-// $Id: DateTime.h,v 1.5 2025/02/10 16:35:10 administrateur Exp $
+// $Id: DateTime.h,v 1.6 2025/02/11 13:52:38 administrateur Exp $
 
 #ifndef __DATE_TIME__
 #define __DATE_TIME__
@@ -80,12 +80,16 @@ class DateTime {
     long epoch;
     long epoch_diff;
 
+    long duration_deconnexion;
+
 		long my_mktime(ST_TM *timeptr);
 		long calculatedEpochTime(ST_DATE_AND_TIME *i__st_date_and_time);
 		bool setSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime);
 		void calcSommerTimeChange(ST_DATE_AND_TIME *io__dateAndTime);
 		ENUM_SOMMER_WINTER getSommerWinterTimeChange(ST_DATE_AND_TIME *i__dateAndTime);
 		void applySommerWinterHour(ST_DATE_AND_TIME *io__dateAndTime_presentation);
+
+    void formatDuration(char *o__buffer, long i__value) const;
 
 	public:
 		DateTime();
@@ -100,6 +104,10 @@ class DateTime {
     long getEpochDiff() const { return epoch_diff; };
 
     void formatEpochDiff(char *o__buffer) const;
+
+    void incDurationDeconnexion() { duration_deconnexion++; };
+    long getDurationDeconnexion() const { return duration_deconnexion; };
+    void formatDurationDeconnexion(char *o__buffer) const;
 };
 
 extern DateTime   *g__date_time;

@@ -1,4 +1,4 @@
-// $Id: Nmea.h,v 1.9 2025/02/10 15:28:25 administrateur Exp $
+// $Id: Nmea.h,v 1.10 2025/02/12 10:29:20 administrateur Exp $
 
 #ifndef __NMEA__
 #define __NMEA__
@@ -59,6 +59,11 @@ typedef struct {
   ST_UNIX_TIME        st_dateAndTimeUNIX_GMT;
 } ST_INFOS_GPS;
 
+typedef struct {
+  unsigned int        nbr_frames_ok;    // Nombre de trames 'GPRMC' et 'GPGGA' recues sans erreur
+  unsigned int        nbr_frames_ko;    // Nombre de trames 'GPRMC' ou 'GPGGA' recues avec erreur
+} ST_STATS_NMEA;
+
 class Nmea {
   private:
     uint16_t          m__idx_frames;
@@ -75,6 +80,8 @@ class Nmea {
     char              m__buffer_send[NUMBER_OF_CHAR_SEND];
 
     bool              m__connected;
+
+    ST_STATS_NMEA     m__stats;
 
   public:
     Nmea();
@@ -102,6 +109,10 @@ class Nmea {
     const char        *getDateTimeLcd() const { return m__infos_gps.st_dateAndTimeUNIX_GMT.t_date_time_lcd; };
 
     void              sendChar(char i__value) const;
+
+    unsigned long     getFramesOk() const { return m__stats.nbr_frames_ok; };
+    unsigned long     getFramesKo() const { return m__stats.nbr_frames_ko; };
+    void              formatNbrFrames(char *o__buffer, unsigned long i__value) const;
 };
 
 extern uint16_t     g__chenillard;

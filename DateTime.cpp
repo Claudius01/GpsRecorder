@@ -1,4 +1,4 @@
-// $Id: DateTime.cpp,v 1.6 2025/02/10 16:35:10 administrateur Exp $
+// $Id: DateTime.cpp,v 1.7 2025/02/11 13:52:38 administrateur Exp $
 
 #include <Arduino.h>
 
@@ -30,7 +30,7 @@ static ST_FOR_SOMMER_TIME_CHANGE   g__st_for_sommer_time_change = {
   }
 };
 
-DateTime::DateTime() : epoch_start(0L),epoch(0), epoch_diff(0L)
+DateTime::DateTime() : epoch_start(0L),epoch(0), epoch_diff(0L), duration_deconnexion(0L)
 {
 	Serial.println("DateTime::DateTime()");
 }
@@ -446,16 +446,26 @@ void DateTime::applySommerWinterHour(ST_DATE_AND_TIME *io__dateAndTime_presentat
 
 void DateTime::formatEpochDiff(char *o__buffer) const
 {
-  if (epoch_diff < 3600L) {
-    // Formatage comme "MM'SS" si 'epoch_diff' < 1 Heure
-    sprintf(o__buffer, "%2lu'%02lu", (epoch_diff / 60L), (epoch_diff % 60L));
+  formatDuration(o__buffer, epoch_diff);
+}
+
+void DateTime::formatDurationDeconnexion(char *o__buffer) const
+{
+  formatDuration(o__buffer, duration_deconnexion);
+}
+
+void DateTime::formatDuration(char *o__buffer, long i__value) const
+{
+  if (i__value < 3600L) {
+    // Formatage comme "MM'SS" si 'i__value' < 1 Heure
+    sprintf(o__buffer, "%2lu'%02lu", (i__value / 60L), (i__value % 60L));
   }
-  else if (epoch_diff < (100L * 3600L)) {
-    // Formatage comme "HH:MM" si 'epoch_diff' < 100 Heures
-    sprintf(o__buffer, "%02lu:%02lu", (epoch_diff / 3600L), (epoch_diff % 3600L) / 60L);
+  else if (i__value < (100L * 3600L)) {
+    // Formatage comme "HH:MM" si 'i__value' < 100 Heures
+    sprintf(o__buffer, "%02lu:%02lu", (i__value / 3600L), (i__value % 3600L) / 60L);
   }
   else {
-    // Formatage comme ">100H" si 'epoch_diff' >= 100 Heures
+    // Formatage comme ">100H" si 'i__value' >= 100 Heures
     sprintf(o__buffer, ">100H");
   }
 }

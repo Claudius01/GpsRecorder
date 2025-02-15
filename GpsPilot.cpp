@@ -1,4 +1,4 @@
-// $Id: GpsPilot.cpp,v 1.15 2025/02/09 21:24:33 administrateur Exp $
+// $Id: GpsPilot.cpp,v 1.16 2025/02/12 14:10:20 administrateur Exp $
 
 #include <Arduino.h>
 
@@ -28,6 +28,8 @@ GpsPilot::GpsPilot() : m__progress(PROGRESS_SEND_IDLE), m__buffer_idx(0), m__buf
   m__properties.file_name = GPSPILOT_FILE_NAME;
   m__properties.name_trace = "";
   m__properties.distance = "";
+  m__properties.cumul_ele_pos = "";
+  m__properties.cumul_ele_neg = "";
 }
 
 GpsPilot::~GpsPilot()
@@ -101,6 +103,12 @@ void GpsPilot::send()
         else if ((l__token = strstr(l__line.c_str(), "#Distance ")) != NULL) {
           getTokenNumValue((l__token + strlen("#Distance ")), m__properties.distance);
         }
+        else if ((l__token = strstr(l__line.c_str(), "#Cumul Elevation Positive ")) != NULL) {
+          getTokenNumValue((l__token + strlen("#Cumul Elevation Positive ")), m__properties.cumul_ele_pos);
+        }
+        else if ((l__token = strstr(l__line.c_str(), "##Cumul Elevation Negative ")) != NULL) {
+          getTokenNumValue((l__token + strlen("#Cumul Elevation Negative ")), m__properties.cumul_ele_neg);
+        }
         else if ((l__token = strstr(l__line.c_str(), "#Checksum ")) != NULL) {
           getTokenCksValue((l__token + strlen("#Checksum ")));
         }
@@ -131,14 +139,22 @@ void GpsPilot::send()
 
             g__gestion_lcd->Paint_DrawString_EN(6, 24, m__properties.name_trace.c_str(), &Font16, BLACK, RED);
             g__gestion_lcd->Paint_DrawString_EN(6, 40, m__properties.distance.c_str(), &Font16, BLACK, RED);
+            g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 12), 40, "+/- ... M", &Font16, BLACK, RED);
 
+            /* TODO: Maj partielle des infos            1         2
+                                              012345678901234567890
+                                             "uu.d Km     +/- ... M"
+            */
             // Effacement du noms et de la distance lus depuis 'GpsPilot.txt'
             m__properties.name_trace = "";
             m__properties.distance = "";
+            m__properties.cumul_ele_pos = "";
+            m__properties.cumul_ele_neg = "";
           }
           else {
             g__gestion_lcd->Paint_DrawString_EN(6, 24, m__properties.name_trace.c_str(), &Font16, BLACK, GREEN);
             g__gestion_lcd->Paint_DrawString_EN(6, 40, m__properties.distance.c_str(), &Font16, BLACK, GREEN);
+            g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 12), 40, "+/- ... M", &Font16, BLACK, GREEN);
           }
         }
       }
@@ -332,6 +348,7 @@ void GpsPilot::getTokenNumValue(const char *i__text, String &o__propertie)
 
     o__propertie = l__buffer;
 
+    // TODO: Sortir la presentation ;-)
     g__gestion_lcd->Paint_DrawString_EN(6, 40, l__buffer, &Font16, BLACK, YELLOW);
   }
 

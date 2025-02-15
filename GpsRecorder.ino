@@ -1,4 +1,4 @@
-// $Id: GpsRecorder.ino,v 1.26 2025/02/10 16:35:10 administrateur Exp $
+// $Id: GpsRecorder.ino,v 1.30 2025/02/12 14:10:20 administrateur Exp $
 
 /* Projet: GpsRecorder
 
@@ -23,7 +23,7 @@
 #include "OneButton.h"
 #include "GpsPilot.h"
 
-#define PROMPT      "GpsRecorder 2025/02/10 V1.0"
+#define PROMPT      "GpsRecorder 2025/02/12 V1.0"
 
 #define USE_INCOMING_CMD    1
 
@@ -77,6 +77,7 @@ volatile bool       g__flg_expired_1_25ms = false;
 //volatile bool       g__flg_expired_2_5ms = false;
 volatile bool       g__flg_expired_10ms = false;
 volatile bool       g__flg_expired_500ms = false;
+volatile bool       g__flg_expired_1_sec = false;
 
 /* Methode de cadencement toutes les 50 uS
    => Cf. 'https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/timer.html'
@@ -102,6 +103,10 @@ void ARDUINO_ISR_ATTR onTimer()
 
   if ((g__pass_on_timer % COUNTER_FOR_500_MS) == 0) {
     g__flg_expired_500ms = true;
+  }
+
+  if ((g__pass_on_timer % COUNTER_FOR_1_SEC) == 0) {
+    g__flg_expired_1_sec = true;
   }
 
   portEXIT_CRITICAL_ISR(&g__timerMux);
@@ -179,7 +184,8 @@ void callback_click(void *oneButton)
 
   char l__buffer2[32];
   memset(l__buffer2, '\0', sizeof(l__buffer2));
-  g__sdcard->formatNbrRecords(l__buffer2);
+  //g__sdcard->formatNbrRecords(l__buffer2);
+  g__nmea->formatNbrFrames(l__buffer2, g__nmea->getFramesOk());
 
   // Ecriture sur la SDCard du resultat avant l'action
   if (g__sdcard->getInhAppendGpsFrame() == false) {
@@ -187,8 +193,11 @@ void callback_click(void *oneButton)
 
     /* Maj partielle des infos            1         2
                                 012345678901234567890
-                               "HH'MM #nnnn ddd.u Kb"
-                               "HH'MM #nnnn d.uuu Mb"
+                               "Mar. 11/02/2025 14:16"
+                               "HH'MM #nnnn  ddd.u Kb"
+                               "HH'MM #nnnn  d.uuu Mb"
+                               "13.2 Km +200 M -120 M"  -> Distance et Denivelle cumule (trace non en boucle)
+                               "13.2 Km +/-253 M    "   -> Distance et Denivelle cumule (trace en boucle)
     */
     g__gestion_lcd->Paint_DrawString_EN(6 + ( 6 * 11), 56, l__buffer2, &Font16, BLACK, YELLOW);
     g__gestion_lcd->Paint_DrawString_EN(6 + (13 * 11), 56, l__buffer, &Font16, BLACK, YELLOW);
@@ -395,13 +404,66 @@ void loop()
     g__gestion_lcd->Paint_DrawSymbol(LIGHTS_POSITION_SDC_BLUE_X, LIGHTS_POSITION_Y,
       (g__sdcard->getInhAppendGpsFrame() ? LIGHT_FULL_IDX : LIGHT_BORD_IDX), &Font24Symbols, BLACK, BLUE);
 
-
     noInterrupts();
-    g__pass_on_timer = 0;
     g__flg_expired_500ms = false;
     interrupts();
   }
 
+  if (g__flg_expired_1_sec) {
+    /* TODO: Amelioration des transitions car pb de presentation ;-(
+             => Objet d'une centralisation de la presentation...
+    */
+    if (g__nmea->getConnected() == false) {
+      g__date_time->incDurationDeconnexion();
+
+      char l__buffer[32];
+      memset(l__buffer, '\0', sizeof(l__buffer));
+      g__date_time->formatDurationDeconnexion(l__buffer);
+      g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 16), 8, l__buffer, &Font16, BLACK, WHITE);
+
+      long l__duration_deconnexion_sec = (g__date_time->getDurationDeconnexion() % 60L);
+
+      if (l__duration_deconnexion_sec == 0L) {
+        memset(l__buffer, '\0', sizeof(l__buffer));
+        g__nmea->formatNbrFrames(l__buffer, g__nmea->getFramesOk());
+        g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 6), 56, l__buffer, &Font16, BLACK, YELLOW);
+      }
+      else if (l__duration_deconnexion_sec == 55L) {
+        memset(l__buffer, '\0', sizeof(l__buffer));
+        g__nmea->formatNbrFrames(l__buffer, g__nmea->getFramesKo());
+        g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 6), 56, l__buffer, &Font16, BLACK, (g__nmea->getFramesKo() == 0L ? YELLOW : RED));
+      }
+    }
+    else {
+      /* Presentation de la duree de deconnexion a partir de la seconde 55"
+         => Celle-ci sera remplacee au passage de la minute (duree de presentation de 5")
+      */
+      char l__buffer[32];
+      long l__time_epoch_sec = (g__nmea->getTimeEpoch() % 60L);
+
+      if (l__time_epoch_sec == 0L) {
+        memset(l__buffer, '\0', sizeof(l__buffer));
+        g__nmea->formatNbrFrames(l__buffer, g__nmea->getFramesOk());
+        g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 6), 56, l__buffer, &Font16, BLACK, (g__sdcard->getInhAppendGpsFrame() == true) ? YELLOW : WHITE);
+      }
+      else if (l__time_epoch_sec == 55L) {
+        memset(l__buffer, '\0', sizeof(l__buffer));
+        g__date_time->formatDurationDeconnexion(l__buffer);
+        g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 16), 8, l__buffer, &Font16, BLACK, YELLOW);
+
+        memset(l__buffer, '\0', sizeof(l__buffer));
+        g__nmea->formatNbrFrames(l__buffer, g__nmea->getFramesKo());
+        g__gestion_lcd->Paint_DrawString_EN(6 + (11 * 6), 56, l__buffer, &Font16, BLACK, (g__nmea->getFramesKo() == 0L ? YELLOW : RED));
+      }
+    }
+
+    noInterrupts();
+    g__pass_on_timer = 0;
+    g__flg_expired_1_sec = false;
+    interrupts();
+  }
+
+  // Test d'expiration des timers
   g__timers->test();
 
   // Keep watching the push button:

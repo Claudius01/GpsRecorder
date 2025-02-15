@@ -1,4 +1,4 @@
-// $Id: GpsPilot.h,v 1.10 2025/02/09 21:24:33 administrateur Exp $
+// $Id: GpsPilot.h,v 1.11 2025/02/12 14:10:20 administrateur Exp $
 
 #ifndef __GPS_PILOT__
 #define __GPS_PILOT__
@@ -36,6 +36,9 @@ typedef struct {
   const char              *file_name;
   String                  name_trace;
   String                  distance;
+  String                  cumul_ele_pos;
+  String                  cumul_ele_neg;
+
   uint32_t                cks_value;
   size_t                  cks_size;
 } ST_PROPERTIES;
