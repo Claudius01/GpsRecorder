@@ -12,7 +12,7 @@ Cette boussole fournit les informations et fonctionnalités suivantes; à savoir
  - Informer l'utilisateur de sa position actuelle à des intervalles de temps prédéfinis suivant la position par rapport au tracé à suivre 
  - Fournir à l'utilisateur un lien vers une destination en ligne pertinente (distance et cap de la rose des vents ou cap horaire suivant la vitesse instantanée)
 
-🔔 A noter que le cap est pertinent dans les trames GPS si la vitesse de déplacement n'est pas nulle auquel cas le cap horaire par rapport au déplacement est synthétisé parmi 12 orientations, sinon c'est le cap absolu de la rose des vents qui est synthétisé parmi 16 orientations.
+🔔 A noter que le cap est pertinent dans les trames GPS si la vitesse de déplacement n'est pas nulle auquel cas le cap horaire par rapport au déplacement est synthétisé parmi 12 orientations horaires relatives (ie. Quatorze heures), sinon c'est le cap absolu de la rose des vents qui est synthétisé parmi 16 orientations absolues (ie. Sud-Sud-Est).
 
  - La direction à prendre pour suivre un itinéraire donné (distance et cap sur ou par rapport au tracé, distance avant une bifurcation, distance et cap à suivre après une bifurcation, etc.) ou pour rejoindre à vol d'oiseau une position donnée et qui sera issue d'une trace GPS préalablement enregistrée ou mémorisée
  - L'heure et le temps estimés pour rejoindre la position d'arrivée et ce, en fonction de l'allure et le profil du terrain constatés au cours de la randonnée
