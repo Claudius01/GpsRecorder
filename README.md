@@ -4,6 +4,7 @@ Projet basé sur une clé USB [ESP32-S3-GEEK](https://www.waveshare.com/wiki/ESP
 ![ESP32-S3-GEEK](600px-ESP32-S3-GEEK-introduction-02.png)
 
 # Présentation du projet
+
 Le but de ce projet commencé en mars 2020 est la réalisation d'une boussole à guidage vocal à l'image d'un GPS de voiture permettant d'assister vocalement le randonneur dans ses déplacements.
 
 Cette boussole fournit les informations et fonctionnalités suivantes; à savoir :
@@ -38,6 +39,6 @@ Les caractéristiques de cette boussole sont :
  - Réglage du volume sonore via le bouton poussoir rotatif et/ou les oreillettes si supporté
  - Étanche aux projections d'eau (coffret plastique verrouillé par fermetures)
  - Arrêt / Marche, Rechargement de la batterie et RESET matériel sans ouverture du coffret
- - Symbologies de fonctionnement par Leds (watchdog, heartbeat, acquisition / perte des signaux GPS, diffusion d'un message vocal en cours, état connecté / déconnecté d'appariement des oreillettes Bluetooth, codes et comptabilisations des erreurs, etc.)
+ - Symbologies de fonctionnement par Leds (*watchdog*, *heartbeat*, acquisition / perte des signaux GPS, diffusion d'un message vocal en cours, état connecté / déconnecté d'appariement des oreillettes Bluetooth, codes et comptabilisations des erreurs, etc.)
 
 🔔 La partie GPS (enregistreur de traces et parcours de référence sur clé USB) est le bloc fonctionnel du projet Enregistreur de traces GPS raccordé à un nouveau bloc à base d'un ESP32 qui réalise tous les traitements et le pilotage d'un lecteur MP3 série relié à un transmetteur Bluetooth permettant une restitution vocale au moyen d'oreillettes sans fil.
